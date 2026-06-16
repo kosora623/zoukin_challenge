@@ -10,7 +10,7 @@ const STAGE_WIDTH_RATIO = 0.84
 const STAGE_HEIGHT_RATIO = 0.8
 const STAGE_MAX_WIDTH = 760
 const STAGE_MAX_HEIGHT = 520
-const SHARE_URL = 'http://nurezoukin.kosora623.com/'
+const SHARE_URL = 'https://kosora623.github.io/zoukin_challenge/'
 
 const timerEl = document.getElementById('timer') as HTMLSpanElement
 const scoreEl = document.getElementById('score') as HTMLSpanElement
