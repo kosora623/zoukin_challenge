@@ -1,5 +1,6 @@
 import './style.css'
 import titleBg from './assets/title.avif'
+import brushImgSrc from './assets/zoukin.png'
 
 const GAME_TIME_MS = 20_000
 const SAMPLE_INTERVAL_MS = 100
@@ -215,7 +216,7 @@ function loadBrush(): Promise<void> {
       resolve()
     }
     img.onerror = () => resolve()
-    img.src = '/src/assets/zoukin.png'
+    img.src = brushImgSrc
   })
 }
 
