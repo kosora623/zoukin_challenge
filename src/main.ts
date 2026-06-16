@@ -5,9 +5,9 @@ import brushImgSrc from './assets/zoukin.png'
 const GAME_TIME_MS = 20_000
 const SAMPLE_INTERVAL_MS = 100
 const BRUSH_SIZE = 100
-const BRUSH_ERASE_ALPHA = 0.38
 const APP_BG_COLOR = '#aab5c5'
-const LAYER_CLEAR_THRESHOLD = 94
+const LAYER_CLEAR_THRESHOLD = 88
+const ALPHA_CLEAR_THRESHOLD = 24
 const STAGE_WIDTH_RATIO = 0.84
 const STAGE_HEIGHT_RATIO = 0.8
 const STAGE_MAX_WIDTH = 760
@@ -255,14 +255,13 @@ function eraseAt(x: number, y: number) {
 
   layer.ctx.save()
   layer.ctx.globalCompositeOperation = 'destination-out'
-  layer.ctx.globalAlpha = BRUSH_ERASE_ALPHA
   if (brushImg && brushReady) {
-    const w = BRUSH_SIZE * 0.9
+    const w = BRUSH_SIZE
     const h = (brushImg.height / brushImg.width) * w
     layer.ctx.drawImage(brushImg, x - w / 2, y - h / 2, w, h)
   } else {
     layer.ctx.beginPath()
-    layer.ctx.arc(x, y, BRUSH_SIZE * 0.3, 0, Math.PI * 2)
+    layer.ctx.arc(x, y, BRUSH_SIZE * 0.34, 0, Math.PI * 2)
     layer.ctx.fill()
   }
   layer.ctx.restore()
@@ -378,7 +377,7 @@ function computeLayerPercent(layer: DirtLayer, step = 4) {
     for (let x = 0; x < srcW; x += stepPx) {
       const idx = (y * srcW + x) * 4
       total++
-      if (data[idx + 3] === 0) cleared++
+      if (data[idx + 3] < ALPHA_CLEAR_THRESHOLD) cleared++
     }
   }
   return (cleared / total) * 100
@@ -402,13 +401,16 @@ function updateLayerProgress() {
   if (current.progress >= LAYER_CLEAR_THRESHOLD && activeLayerIndex < dirtLayers.length - 1) {
     current.cleared = true
     activeLayerIndex++
-  } else if (activeLayerIndex === dirtLayers.length - 1 && current.progress >= 99.5) {
+  } else if (activeLayerIndex === dirtLayers.length - 1 && current.progress >= LAYER_CLEAR_THRESHOLD) {
     current.cleared = true
     activeLayerIndex = dirtLayers.length
+    cleanedPercent = 100
   }
 
   const completedLayers = dirtLayers.filter((layer) => layer.cleared).length
-  cleanedPercent = Math.min(100, ((completedLayers + (current.cleared ? 0 : current.progress / 100)) / dirtLayers.length) * 100)
+  if (cleanedPercent < 100) {
+    cleanedPercent = Math.min(100, ((completedLayers + (current.cleared ? 0 : current.progress / 100)) / dirtLayers.length) * 100)
+  }
   layerStatusEl.textContent = activeLayerIndex >= dirtLayers.length
     ? `LAYER ${dirtLayers.length}/${dirtLayers.length}`
     : `LAYER ${activeLayerIndex + 1}/${dirtLayers.length}`
@@ -469,6 +471,7 @@ function startGame() {
 }
 
 function endGame() {
+  if (!isRunning) return
   try {
     updateLayerProgress()
     scoreEl.textContent = cleanedPercent.toFixed(1)
@@ -590,7 +593,9 @@ function loop(now: number) {
 
     render()
 
-    if (now - startTime >= GAME_TIME_MS) {
+    if (cleanedPercent >= 100) {
+      endGame()
+    } else if (now - startTime >= GAME_TIME_MS) {
       endGame()
     }
   } else {
