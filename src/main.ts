@@ -207,24 +207,22 @@ window.addEventListener('resize', () => {
 })
 
 let brushImg: HTMLImageElement | null = null
-let brushLoadingStarted = false
-function loadBrush(): Promise<void> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      brushImg = img
-      resolve()
-    }
-    img.onerror = () => resolve()
-    img.src = brushImgSrc
-  })
+let brushReady = false
+
+function initBrush() {
+  const img = new Image()
+  img.onload = () => {
+    brushImg = img
+    brushReady = true
+  }
+  img.onerror = () => {
+    brushImg = null
+    brushReady = false
+  }
+  img.src = brushImgSrc
 }
 
-function ensureBrushLoading() {
-  if (brushLoadingStarted) return
-  brushLoadingStarted = true
-  void loadBrush()
-}
+initBrush()
 
 let isRunning = false
 let startTime = 0
@@ -255,9 +253,15 @@ function eraseAt(x: number, y: number) {
 
   layer.ctx.save()
   layer.ctx.globalCompositeOperation = 'destination-out'
-  layer.ctx.beginPath()
-  layer.ctx.arc(x, y, BRUSH_SIZE * 0.34, 0, Math.PI * 2)
-  layer.ctx.fill()
+  if (brushImg && brushReady) {
+    const w = BRUSH_SIZE
+    const h = (brushImg.height / brushImg.width) * w
+    layer.ctx.drawImage(brushImg, x - w / 2, y - h / 2, w, h)
+  } else {
+    layer.ctx.beginPath()
+    layer.ctx.arc(x, y, BRUSH_SIZE * 0.34, 0, Math.PI * 2)
+    layer.ctx.fill()
+  }
   layer.ctx.restore()
 }
 
@@ -283,18 +287,16 @@ function pointerMove(e: PointerEvent) {
   if (!isRunning) return
   updatePointerPosition(e)
 
-  if (pointerType === 'mouse' && !isPointerDown) {
+  if (!isPointerDown) {
     return
   }
 
-  if (isPointerDown) {
-    const dx = pointerPos.x - lastPos.x
-    const dy = pointerPos.y - lastPos.y
-    const dist2 = dx * dx + dy * dy
-    if (dist2 > 4) {
-      eraseAt(pointerPos.x, pointerPos.y)
-      lastPos = { ...pointerPos }
-    }
+  const dx = pointerPos.x - lastPos.x
+  const dy = pointerPos.y - lastPos.y
+  const dist2 = dx * dx + dy * dy
+  if (dist2 > 4) {
+    eraseAt(pointerPos.x, pointerPos.y)
+    lastPos = { ...pointerPos }
   }
 }
 
@@ -311,10 +313,16 @@ function pointerLeave() {
   }
 }
 
+function pointerEnter(e: PointerEvent) {
+  if (!isRunning) return
+  updatePointerPosition(e)
+}
+
 function attachGameplayInput() {
   if (gameplayInputAttached) return
   canvas.addEventListener('pointerdown', pointerDown)
   canvas.addEventListener('pointermove', pointerMove)
+  canvas.addEventListener('pointerenter', pointerEnter)
   window.addEventListener('pointerup', pointerUp)
   canvas.addEventListener('pointerleave', pointerLeave)
   gameplayInputAttached = true
@@ -324,6 +332,7 @@ function detachGameplayInput() {
   if (!gameplayInputAttached) return
   canvas.removeEventListener('pointerdown', pointerDown)
   canvas.removeEventListener('pointermove', pointerMove)
+  canvas.removeEventListener('pointerenter', pointerEnter)
   window.removeEventListener('pointerup', pointerUp)
   canvas.removeEventListener('pointerleave', pointerLeave)
   gameplayInputAttached = false
@@ -418,7 +427,7 @@ function render() {
     ctx.restore()
   }
 
-  if (isRunning && pointerVisible && brushImg) {
+  if (isRunning && pointerVisible && brushImg && brushReady) {
     const cursorWidth = BRUSH_SIZE
     const cursorHeight = (brushImg.height / brushImg.width) * cursorWidth
     ctx.save()
@@ -442,7 +451,6 @@ function lockInput() {
 
 function startGame() {
   setTitleOverlayVisible(false)
-  ensureBrushLoading()
   hasStarted = true
   isRunning = true
   startTime = performance.now()
