@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>20秒雑巾がけチャレンジ</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="20秒雑巾がけチャレンジ" />
+    <meta property="og:title" content="20秒雑巾がけチャレンジ" />
+    <meta property="og:description" content="20秒でどれだけ拭けるか挑戦しよう。" />
+    <meta property="og:url" content="http://nurezoukin.kosora623.com/" />
+    <meta property="og:image" content="http://nurezoukin.kosora623.com/title.avif" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="20秒雑巾がけチャレンジ" />
+    <meta name="twitter:description" content="20秒でどれだけ拭けるか挑戦しよう。" />
+    <meta name="twitter:image" content="http://nurezoukin.kosora623.com/title.avif" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="ui-container">
+        <div class="ui-item">TIME: <span id="timer">20.00</span>s</div>
+        <div class="ui-item">CLEAN: <span id="score">0.0</span>%</div>
+      </div>
+
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="resultOverlay" class="hidden">
+        <div class="result-box">
+          <h2>タイムアップ！</h2>
+          <p class="final-score">お掃除率: <span id="finalScore">0</span>%</p>
+          <div class="result-actions">
+            <button id="retryBtn" type="button">リトライ</button>
+            <button id="shareBtn" type="button">共有</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
