@@ -5,8 +5,9 @@ import brushImgSrc from './assets/zoukin.png'
 const GAME_TIME_MS = 20_000
 const SAMPLE_INTERVAL_MS = 100
 const BRUSH_SIZE = 100
+const BRUSH_ERASE_ALPHA = 0.38
 const APP_BG_COLOR = '#aab5c5'
-const LAYER_CLEAR_THRESHOLD = 82
+const LAYER_CLEAR_THRESHOLD = 94
 const STAGE_WIDTH_RATIO = 0.84
 const STAGE_HEIGHT_RATIO = 0.8
 const STAGE_MAX_WIDTH = 760
@@ -53,7 +54,7 @@ if (!shareBtn) {
 
 const layerStatusEl = document.createElement('div')
 layerStatusEl.className = 'ui-item layer-badge'
-layerStatusEl.textContent = 'LAYER 1/3'
+layerStatusEl.textContent = 'LAYER 1/4'
 uiContainer?.appendChild(layerStatusEl)
 
 const ctx = canvas.getContext('2d')!
@@ -106,9 +107,10 @@ function createLayer(fillStyle: string, opacity: number): DirtLayer {
 function buildDirtLayers(width: number, height: number) {
   dirtLayers.length = 0
   dirtLayers.push(
-    createLayer('rgba(80, 50, 30, 0.92)', 1),
-    createLayer('rgba(95, 64, 38, 0.78)', 0.92),
-    createLayer('rgba(120, 88, 54, 0.62)', 0.85),
+    createLayer('rgba(55, 32, 18, 0.98)', 1),
+    createLayer('rgba(70, 42, 24, 0.94)', 0.96),
+    createLayer('rgba(88, 56, 32, 0.88)', 0.92),
+    createLayer('rgba(105, 72, 42, 0.78)', 0.86),
   )
 
   for (const layer of dirtLayers) {
@@ -128,26 +130,26 @@ function paintDirtLayers() {
     layer.ctx.fillStyle = layer.fillStyle
     layer.ctx.fillRect(stageRect.x, stageRect.y, stageRect.width, stageRect.height)
 
-    // それぞれ少し違う汚れ感を出す
-    layer.ctx.globalAlpha = 0.18 + index * 0.07
-    layer.ctx.fillStyle = index === 0 ? '#2d1d10' : index === 1 ? '#62422b' : '#8d6b4b'
-    for (let y = stageRect.y - 20; y < stageRect.y + stageRect.height + 40; y += 42) {
-      for (let x = stageRect.x - 20; x < stageRect.x + stageRect.width + 40; x += 58) {
+    // それぞれ少し違う汚れ感を出す（密度高め）
+    layer.ctx.globalAlpha = 0.22 + index * 0.06
+    layer.ctx.fillStyle = index === 0 ? '#1a1008' : index === 1 ? '#4a2f1a' : index === 2 ? '#6b4a2c' : '#8d6b4b'
+    for (let y = stageRect.y - 20; y < stageRect.y + stageRect.height + 40; y += 34) {
+      for (let x = stageRect.x - 20; x < stageRect.x + stageRect.width + 40; x += 46) {
         const wobbleX = (Math.sin((x + y + index * 91) * 0.18) * 9)
         const wobbleY = (Math.cos((x - y + index * 57) * 0.16) * 7)
         const noise = (x * 13 + y * 7 + index * 31) % 16
-        const radius = 10 + ((noise + 16) % 16)
+        const radius = 11 + ((noise + 16) % 16)
         layer.ctx.beginPath()
-        layer.ctx.ellipse(x + wobbleX, y + wobbleY, radius * 1.15, radius * 0.7, (x + y) * 0.02, 0, Math.PI * 2)
+        layer.ctx.ellipse(x + wobbleX, y + wobbleY, radius * 1.2, radius * 0.75, (x + y) * 0.02, 0, Math.PI * 2)
         layer.ctx.fill()
       }
     }
     layer.ctx.globalAlpha = 1
 
     // 上層ほど少し粗いノイズを足す
-    layer.ctx.globalAlpha = 0.16 + index * 0.05
+    layer.ctx.globalAlpha = 0.2 + index * 0.05
     layer.ctx.fillStyle = '#ffffff'
-    for (let i = 0; i < 380; i++) {
+    for (let i = 0; i < 520; i++) {
       const nx = stageRect.x + ((i * 97 + index * 193) % Math.max(1, stageRect.width))
       const ny = stageRect.y + ((i * 53 + index * 157) % Math.max(1, stageRect.height))
       const size = (i % 3) + 1
@@ -253,13 +255,14 @@ function eraseAt(x: number, y: number) {
 
   layer.ctx.save()
   layer.ctx.globalCompositeOperation = 'destination-out'
+  layer.ctx.globalAlpha = BRUSH_ERASE_ALPHA
   if (brushImg && brushReady) {
-    const w = BRUSH_SIZE
+    const w = BRUSH_SIZE * 0.9
     const h = (brushImg.height / brushImg.width) * w
     layer.ctx.drawImage(brushImg, x - w / 2, y - h / 2, w, h)
   } else {
     layer.ctx.beginPath()
-    layer.ctx.arc(x, y, BRUSH_SIZE * 0.34, 0, Math.PI * 2)
+    layer.ctx.arc(x, y, BRUSH_SIZE * 0.3, 0, Math.PI * 2)
     layer.ctx.fill()
   }
   layer.ctx.restore()
@@ -399,7 +402,7 @@ function updateLayerProgress() {
   if (current.progress >= LAYER_CLEAR_THRESHOLD && activeLayerIndex < dirtLayers.length - 1) {
     current.cleared = true
     activeLayerIndex++
-  } else if (activeLayerIndex === dirtLayers.length - 1 && current.progress >= 99) {
+  } else if (activeLayerIndex === dirtLayers.length - 1 && current.progress >= 99.5) {
     current.cleared = true
     activeLayerIndex = dirtLayers.length
   }
