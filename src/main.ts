@@ -2,11 +2,13 @@ import './style.css'
 import titleBg from './assets/title.avif'
 import brushImgSrc from './assets/zoukin.png'
 
-const GAME_TIME_MS = 20_000
+const GAME_TIME_MS = 10_000
+const START_INPUT_DELAY_MS = 350
 const SAMPLE_INTERVAL_MS = 100
 const BRUSH_SIZE = 100
+const TOUCH_BRUSH_SCALE = 0.72
 const APP_BG_COLOR = '#aab5c5'
-const LAYER_CLEAR_THRESHOLD = 88
+const LAYER_CLEAR_THRESHOLD = 91
 const ALPHA_CLEAR_THRESHOLD = 24
 const STAGE_WIDTH_RATIO = 0.84
 const STAGE_HEIGHT_RATIO = 0.8
@@ -243,6 +245,10 @@ function getActiveLayer() {
   return dirtLayers[activeLayerIndex] ?? null
 }
 
+function getBrushSize() {
+  return pointerType === 'touch' ? BRUSH_SIZE * TOUCH_BRUSH_SCALE : BRUSH_SIZE
+}
+
 function eraseAt(x: number, y: number) {
   const layer = getActiveLayer()
   if (!layer || layer.cleared) return
@@ -253,15 +259,16 @@ function eraseAt(x: number, y: number) {
     return
   }
 
+  const brushSize = getBrushSize()
   layer.ctx.save()
   layer.ctx.globalCompositeOperation = 'destination-out'
   if (brushImg && brushReady) {
-    const w = BRUSH_SIZE
+    const w = brushSize
     const h = (brushImg.height / brushImg.width) * w
     layer.ctx.drawImage(brushImg, x - w / 2, y - h / 2, w, h)
   } else {
     layer.ctx.beginPath()
-    layer.ctx.arc(x, y, BRUSH_SIZE * 0.34, 0, Math.PI * 2)
+    layer.ctx.arc(x, y, brushSize * 0.34, 0, Math.PI * 2)
     layer.ctx.fill()
   }
   layer.ctx.restore()
@@ -279,6 +286,7 @@ function updatePointerPosition(e: PointerEvent) {
 
 function pointerDown(e: PointerEvent) {
   if (!isRunning) return
+  if (performance.now() - startTime < START_INPUT_DELAY_MS) return
   updatePointerPosition(e)
   isPointerDown = true
   lastPos = { ...pointerPos }
@@ -287,6 +295,7 @@ function pointerDown(e: PointerEvent) {
 
 function pointerMove(e: PointerEvent) {
   if (!isRunning) return
+  if (performance.now() - startTime < START_INPUT_DELAY_MS) return
   updatePointerPosition(e)
 
   if (!isPointerDown) {
@@ -296,7 +305,8 @@ function pointerMove(e: PointerEvent) {
   const dx = pointerPos.x - lastPos.x
   const dy = pointerPos.y - lastPos.y
   const dist2 = dx * dx + dy * dy
-  if (dist2 > 4) {
+  const minDist2 = pointerType === 'touch' ? 36 : 4
+  if (dist2 > minDist2) {
     eraseAt(pointerPos.x, pointerPos.y)
     lastPos = { ...pointerPos }
   }
@@ -433,7 +443,7 @@ function render() {
   }
 
   if (isRunning && pointerVisible && brushImg && brushReady) {
-    const cursorWidth = BRUSH_SIZE
+    const cursorWidth = getBrushSize()
     const cursorHeight = (brushImg.height / brushImg.width) * cursorWidth
     ctx.save()
     ctx.globalAlpha = pointerType === 'touch' ? 0.92 : 0.98
