@@ -3,7 +3,6 @@ import titleBg from './assets/title.avif'
 import brushImgSrc from './assets/zoukin.png'
 
 const GAME_TIME_MS = 10_000
-const START_INPUT_DELAY_MS = 350
 const SAMPLE_INTERVAL_MS = 100
 const BRUSH_SIZE = 100
 const TOUCH_BRUSH_SCALE = 0.72
@@ -286,7 +285,6 @@ function updatePointerPosition(e: PointerEvent) {
 
 function pointerDown(e: PointerEvent) {
   if (!isRunning) return
-  if (performance.now() - startTime < START_INPUT_DELAY_MS) return
   updatePointerPosition(e)
   isPointerDown = true
   lastPos = { ...pointerPos }
@@ -295,7 +293,6 @@ function pointerDown(e: PointerEvent) {
 
 function pointerMove(e: PointerEvent) {
   if (!isRunning) return
-  if (performance.now() - startTime < START_INPUT_DELAY_MS) return
   updatePointerPosition(e)
 
   if (!isPointerDown) {
